@@ -1,47 +1,62 @@
 import requests
-import pytest
 
-BASE_URL = "https://postman-echo.com"
+BASE_URL = "https://httpbin.org"
+
 
 def test_get_with_query_params():
-    """Проверяем, что GET-запрос корректно отражает квери-параметры в ответе."""
-    params = {"search": "pytest", "page": "1"}
-    response = requests.get(f"{BASE_URL}/get", params=params)
+    params = {"key": "value", "limit": "10", "active": "true"}
+    resp = requests.get(f"{BASE_URL}/get", params=params, timeout=5)
     
-    assert response.status_code == 200
-    assert response.json()["args"] == params
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["args"] == params
+    assert data["method"] == "GET"
+    assert data["url"].startswith(BASE_URL + "/get")
 
-def test_post_json_body():
-    """Проверяем, что POST с JSON-телом возвращает его в поле 'json'."""
-    payload = {"username": "alex_isaev", "active": True}
-    response = requests.post(f"{BASE_URL}/post", json=payload)
-    
-    assert response.status_code == 200
-    assert response.json()["json"] == payload
 
-def test_post_form_data():
-    """Проверяем отправку формы и её отражение в поле 'form'."""
-    payload = {"email": "test@example.com", "role": "admin"}
-    response = requests.post(f"{BASE_URL}/post", data=payload)
+def test_post_with_json_body():
+    payload = {"name": "Alex", "role": "developer", "level": 5}
+    resp = requests.post(f"{BASE_URL}/post", json=payload, timeout=5)
     
-    assert response.status_code == 200
-    assert response.json()["form"] == payload
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["json"] == payload
+    assert data["form"] is None
+    assert data["method"] == "POST"
+    assert data["headers"]["Content-Type"] == "application/json"
 
-def test_delete_method_reflection():
-    """Проверяем отражение метода DELETE через универсальный эндпоинт /anything."""
-    response = requests.delete(f"{BASE_URL}/anything")
-    
-    assert response.status_code == 200
-    # В ответе /anything информация о методе всегда находится на верхнем уровне
-    assert response.json()["method"] == "DELETE"
 
-def test_put_with_headers():
-    """Проверяем отражение метода PUT и кастомных заголовков через /anything."""
-    custom_headers = {"X-Custom-Token": "secret-123"}
-    response = requests.put(f"{BASE_URL}/anything", headers=custom_headers)
+def test_post_with_form_data():
+    form_data = {"username": "admin", "password": "secret123", "remember": "true"}
+    resp = requests.post(f"{BASE_URL}/post", data=form_data, timeout=5)
     
-    assert response.status_code == 200
-    # Проверяем, что сервер правильно определил метод
-    assert response.json()["method"] == "PUT"
-    # Проверяем, что сервер вернул наш кастомный заголовок в ответе
-    assert response.json()["headers"]["X-Custom-Token"] == "secret-123"
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["form"] == form_data
+    assert data["json"] is None
+    assert data["method"] == "POST"
+
+
+def test_delete_method():
+    resp = requests.delete(f"{BASE_URL}/delete", timeout=5)
+    
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["method"] == "DELETE"
+    assert data["args"] == {}
+
+
+def test_put_with_custom_headers():
+    headers = {"X-Request-ID": "req-abc-123", "X-Custom-Auth": "Bearer token-xyz"}
+    resp = requests.put(f"{BASE_URL}/put", headers=headers, timeout=5)
+    
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    header_val = data["headers"].get("X-Request-ID") or data["headers"].get("x-request-id")
+    assert header_val == "req-abc-123"
+    assert data["method"] == "PUT"
