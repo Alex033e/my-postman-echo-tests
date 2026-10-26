@@ -1,6 +1,5 @@
 certifi==2026.7.22
 charset-normalizer==3.5.1
-<<<<<<< HEAD
 colorama==0.4.6
 idna==3.20
 iniconfig==2.3.1
@@ -13,9 +12,8 @@ requests==2.32.3
 urllib3==2.8.0
 requests
 pytest
-=======
 idna==3.20
 python-dotenv==1.0.1
 requests==2.32.3
 urllib3==2.8.0
->>>>>>> efdba26ff5173a77dd8934b9b6163ec9142c6279
+
