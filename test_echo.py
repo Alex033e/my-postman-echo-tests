@@ -1,99 +1,92 @@
-import requests  # ✅ Импорт библиотеки
+import allure
+import requests
 
-BASE_URL = "https://httpbin.org"  # ⚡️ Базовый URL сервиса
+BASE_URL = "https://httpbin.org"
 
 
+@allure.feature("HTTP-методы httpbin")
+@allure.title("GET-запрос с query-параметрами")
+@allure.description("Проверяет передачу query-параметров в GET-запросе и корректность HTTP-метода через resp.request.method.")
 def test_get_with_query_params():
-    """
-    Проверяет передачу query-параметров в GET-запросе.
-    Использует resp.request.method для проверки HTTP-глагола.
-    """
     params = {"key": "value", "limit": "10", "active": "true"}
-    resp = requests.get(f"{BASE_URL}/get", params=params, timeout=5)
-    
-    assert resp.status_code == 200
-    data = resp.json()
-    
-    # Проверка: параметры дошли корректно
-    assert data["args"] == params
-    # Надежная проверка метода через объект запроса (не зависит от структуры ответа сервера)
-    assert resp.request.method == "GET"
-    # Дополнительная проверка URL
-    assert data["url"].startswith(BASE_URL + "/get")
+
+    with allure.step(f"Отправка GET-запроса на {BASE_URL}/get с параметрами {params}"):
+        resp = requests.get(f"{BASE_URL}/get", params=params, timeout=5)
+
+    with allure.step("Проверка статус-кода и переданных параметров"):
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["args"] == params
+        assert resp.request.method == "GET"
+        assert data["url"].startswith(BASE_URL + "/get")
 
 
+@allure.feature("HTTP-методы httpbin")
+@allure.title("POST-запрос с JSON-телом")
+@allure.description("Проверяет отправку JSON-тела в POST-запросе и отсутствие данных формы в ответе.")
 def test_post_with_json_body():
-    """
-    Проверяет отправку JSON-тела.
-    Использует not data.get("form") для совместимости с None и пустым словарём.
-    """
     payload = {"name": "Alex", "role": "developer", "level": 5}
-    resp = requests.post(f"{BASE_URL}/post", json=payload, timeout=5)
-    
-    assert resp.status_code == 200
-    data = resp.json()
-    
-    # Проверка: сервер распознал наш JSON
-    assert data["json"] == payload
-    # Проверка: форма не была передана (None или пустой словарь)
-    assert not data.get("form")
-    # Проверка метода
-    assert resp.request.method == "POST"
+
+    with allure.step(f"Отправка POST-запроса с JSON: {payload}"):
+        resp = requests.post(f"{BASE_URL}/post", json=payload, timeout=5)
+
+    with allure.step("Проверка распознавания JSON сервером"):
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["json"] == payload
+        assert not data.get("form")
+        assert resp.request.method == "POST"
 
 
+@allure.feature("HTTP-методы httpbin")
+@allure.title("POST-запрос с данными формы (form-data)")
+@allure.description("Проверяет отправку данных формы в формате application/x-www-form-urlencoded.")
 def test_post_with_form_data():
-    """
-    Проверяет отправку данных формы (application/x-www-form-urlencoded).
-    """
     form_data = {"username": "admin", "password": "secret123", "remember": "true"}
-    resp = requests.post(f"{BASE_URL}/post", data=form_data, timeout=5)
-    
-    assert resp.status_code == 200
-    data = resp.json()
-    
-    # Проверка: данные формы дошли корректно
-    assert data["form"] == form_data
-    # Проверка: JSON не был передан
-    assert not data.get("json")
-    # Проверка метода
-    assert resp.request.method == "POST"
+
+    with allure.step("Отправка POST-запроса с form-data"):
+        resp = requests.post(f"{BASE_URL}/post", data=form_data, timeout=5)
+
+    with allure.step("Проверка получения данных формы сервером"):
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["form"] == form_data
+        assert not data.get("json")
+        assert resp.request.method == "POST"
 
 
+@allure.feature("HTTP-методы httpbin")
+@allure.title("Выполнение DELETE-запроса")
+@allure.description("Проверяет корректную обработку DELETE-запроса и отсутствие query-параметров.")
 def test_delete_method():
-    """
-    Проверяет выполнение DELETE-запроса.
-    """
-    resp = requests.delete(f"{BASE_URL}/delete", timeout=5)  # ⚠️ Не забываем BASE_URL!
-    
-    assert resp.status_code == 200
-    data = resp.json()
-    
-    # Проверка метода
-    assert resp.request.method == "DELETE"
-    # Проверка: нет параметров в запросе
-    assert data["args"] == {}
+    with allure.step(f"Отправка DELETE-запроса на {BASE_URL}/delete"):
+        resp = requests.delete(f"{BASE_URL}/delete", timeout=5)
+
+    with allure.step("Проверка статус-кода и метода запроса"):
+        assert resp.status_code == 200
+        data = resp.json()
+        assert resp.request.method == "DELETE"
+        assert data["args"] == {}
 
 
+@allure.feature("HTTP-методы httpbin")
+@allure.title("PUT-запрос с кастомными заголовками")
+@allure.description("Проверяет передачу пользовательских HTTP-заголовков X-Request-ID и X-Custom-Auth в PUT-запросе.")
 def test_put_with_custom_headers():
-    """
-    Проверяет передачу кастомных заголовков.
-    Использует resp.request.headers — самый надежный способ,
-    не зависящий от того, что вернул httpbin в ответе.
-    """
     headers = {
         "X-Request-ID": "req-abc-123",
         "X-Custom-Auth": "Bearer token-xyz"
     }
-    resp = requests.put(f"{BASE_URL}/put", headers=headers, timeout=5)
-    
-    assert resp.status_code == 200
-    data = resp.json()
 
-    
-    header_val = (
-        resp.request.headers.get("x-request-id") or 
-        resp.request.headers.get("x_request_id") or 
-        resp.request.headers.get("X-Request-ID")
-    )
-    assert header_val == "req-abc-123"
-    assert resp.request.method == "PUT"
+    with allure.step("Отправка PUT-запроса с кастомными заголовками"):
+        resp = requests.put(f"{BASE_URL}/put", headers=headers, timeout=5)
+
+    with allure.step("Проверка статус-кода и наличия заголовка X-Request-ID"):
+        assert resp.status_code == 200
+        header_val = (
+            resp.request.headers.get("x-request-id") or
+            resp.request.headers.get("x_request_id") or
+            resp.request.headers.get("X-Request-ID")
+        )
+        assert header_val == "req-abc-123"
+        assert resp.request.method == "PUT"
