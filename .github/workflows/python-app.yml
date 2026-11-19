@@ -31,10 +31,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Install Allure CLI
-        run: |
-          curl -o allure.zip -fLs https://github.com
-          unzip -q allure.zip -d /opt/
-          sudo ln -s /opt/allure-2.32.0/bin/allure /usr/bin/allure
+        run: npm install -g allure-commandline
 
       - name: Run tests with pytest
         continue-on-error: true
